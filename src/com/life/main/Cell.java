@@ -20,6 +20,8 @@ public class Cell {
         this.gc = gc;
 
         cellSize = gc.cellSize;
+        checkNeighbors();
+        update();
     }
 
     public void enable(){
@@ -37,10 +39,6 @@ public class Cell {
             disable();
         else
             enable();
-    }
-
-    public int getStatus(){
-        return status;
     }
 
     public void checkNeighbors(){
@@ -78,12 +76,16 @@ public class Cell {
     public void render(Graphics g){
         if (active == false) {
             g.setColor(Color.black);
-            g.drawString(Integer.toString(neighborsCount), x, y);
-        }else{
+            if (Main.debug) g.drawString(Integer.toString(neighborsCount), x, y);
+            g.drawRect(x, y, cellSize, cellSize);
+        } else {
             g.setColor(Color.black);
             g.fillRect(x, y, cellSize, cellSize);
-            g.setColor(Color.white);
-            g.drawString(Integer.toString(neighborsCount), x, y);
+
+            if (Main.debug) {
+                g.setColor(Color.white);
+                g.drawString(Integer.toString(neighborsCount), x, y);
+            }
         }
     }
 

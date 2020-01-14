@@ -1,53 +1,51 @@
 package com.life.main;
 
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.LinkedList;
 import java.util.Random;
 
-public class GridController {
+public class GridController extends MouseAdapter {
 
     LinkedList<Cell> grid = new LinkedList<>();
+    LinkedList<LinkedList<Cell>> previousGrids = new LinkedList<>();
 
-    int[][] intGrid;
-
-    int cellSize = 0;
-    int cols, rows;
+    int cellSize;
+    int borderWidth = 2;
 
     int clock = 0;
+    int mouseTimer = 0;
+
+    int generation = 0;
 
     Random r;
 
-    GridController(int cellSize){
+    private Main main;
+
+    GridController(int cellSize, Main main) {
         r = new Random();
 
         this.cellSize = cellSize;
+        this.main = main;
+        generateGrid();
+    }
 
-        cols = Main.WIDTH/cellSize;
-        rows = Main.HEIGHT/cellSize;
-
-        for (int x = cellSize; x < Main.WIDTH-cellSize; x+=cellSize){
-            for (int y = cellSize; y < Main.HEIGHT-cellSize; y+=cellSize){
-                int value = r.nextInt(11);
-
-               /*if (value >= 3)
-                    addCell(new Cell(x, y, 1, this));
-                else
-               */     addCell(new Cell(x, y, 0, this));
-                addCell(new Cell(x,y,0,this));
+    public void generateGrid() {
+        for (int x = cellSize * 2; x < Main.WIDTH - cellSize * 2; x += cellSize) {
+            for (int y = cellSize * 2; y < Main.HEIGHT - cellSize * 2; y += cellSize) {
+                addCell(new Cell(x, y, 0, this));
             }
         }
-
-        getCell(64,32).enable();
-        getCell(64,96).enable();
-
     }
 
 
-    public Cell getCell(int x, int y){
-        if (x < 0 || y < 0 || x > Main.WIDTH-cellSize || y > Main.WIDTH-cellSize)
+    public Cell getCell(int x, int y) {
+        if (x < 0 || y < 0 || x > Main.WIDTH - cellSize * 2 || y > Main.HEIGHT - cellSize * 2) {
             return null;
+        }
 
-        for (int i = 0; i < grid.size(); i++){
+        for (int i = 0; i < grid.size(); i++) {
             Cell cell = grid.get(i);
 
             if (x == cell.x && y == cell.y)
@@ -57,7 +55,7 @@ public class GridController {
     }
 
     public boolean isActive(int x, int y){
-        if (x < 0 || y < 0 || x > Main.WIDTH-cellSize || y > Main.WIDTH-cellSize)
+        if (x < 0 || y < 0 || x > Main.WIDTH - cellSize * 2 || y > Main.HEIGHT - cellSize * 2)
             return false;
 
         for (int i = 0; i < grid.size(); i++){
@@ -70,29 +68,85 @@ public class GridController {
         return false;
     }
 
-    public void addCell(Cell cell){
+    public void addCell(Cell cell) {
         grid.add(cell);
     }
 
-    public void tick(){
+    public void advanceGeneration() {
+        LinkedList<Cell> tempGrid = new LinkedList<>();
+
+        for (Cell cell : grid) {
+            tempGrid.add(cell);
+        }
+
+        previousGrids.add(tempGrid);
+
+        for (int i = 0; i < grid.size(); i++) {
+            Cell cell = grid.get(i);
+            cell.checkNeighbors();
+        }
+
+        for (int i = 0; i < grid.size(); i++) {
+            Cell cell = grid.get(i);
+            cell.update();
+        }
+        generation++;
+    }
+
+    public void resetGenerations() {
+        grid.clear();
+        generateGrid();
+        generation = 0;
+    }
+
+    public void mousePressed(MouseEvent e) {
+        int mx = Math.floorDiv(e.getX(), cellSize) * cellSize;
+        int my = Math.floorDiv(e.getY(), cellSize) * cellSize;
+
+        if (mouseTimer < 1 && e.getButton() == MouseEvent.BUTTON1 && generation == 0) {
+            Cell cell = getCell(mx, my);
+            if (cell.active)
+                cell.disable();
+            else
+                cell.enable();
+        }
+    }
+
+    public void mouseReleased(MouseEvent e) {
+        mouseTimer = 0;
+    }
+
+    public void tick() {
+        if (main.gameState == STATE.Paused) {
+            clock = 0;
+            return;
+        }
+
         clock += 1;
 
-        if (clock >= 20){
-            for (int i = 0; i < grid.size(); i++){
+        if (clock >= 5) {
+            for (int i = 0; i < grid.size(); i++) {
                 Cell cell = grid.get(i);
                 cell.checkNeighbors();
             }
+
+            for (int i = 0; i < grid.size(); i++) {
+                Cell cell = grid.get(i);
+                cell.update();
+            }
+
+            generation++;
+
             clock = 0;
-        }
-        for (int i = 0; i < grid.size(); i++){
-            Cell cell = grid.get(i);
-            cell.update();
         }
 
     }
 
-    public void render(Graphics g){
-        for (int i = 0; i < grid.size(); i++){
+    public void render(Graphics g) {
+        g.setColor(Color.black);
+        g.drawString("Generation #:" + generation, 32, 32);
+
+        for (int i = 0; i < grid.size(); i++) {
             Cell cell = grid.get(i);
             cell.render(g);
         }

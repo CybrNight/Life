@@ -3,28 +3,34 @@ package com.life.main;
 import java.awt.*;
 import java.awt.image.BufferStrategy;
 
-public class Main extends Canvas implements Runnable{
+public class Main extends Canvas implements Runnable {
 
     private static final long serialVersionUID = 8703577945772343437L;
 
-    public static final int WIDTH = 640, HEIGHT = 480;
+    public static final int WIDTH = 480, HEIGHT = 640;
     private Thread thread;
 
-    GridController gc = new GridController(32);
+    GridController gc;
 
     private boolean running = false;
+    public static boolean debug = false;
 
-    private Main(){
+    public STATE gameState = STATE.Paused;
+
+    private Main() {
+        gc = new GridController(24, this);
+        this.addKeyListener(new KeyInput(gc, this));
+        this.addMouseListener(gc);
         new Window(WIDTH, HEIGHT, "Life", this);
     }
 
-    public synchronized void start(){
+    public synchronized void start() {
         thread = new Thread(this);
         thread.start();
         running = true;
     }
 
-    public synchronized void stop(){
+    public synchronized void stop() {
         try{
             thread.join();
             running = false;
@@ -54,7 +60,6 @@ public class Main extends Canvas implements Runnable{
 
             if(System.currentTimeMillis() - timer > 1000) {
                 timer += 1000;
-                System.out.println("FPS: "+ frames);
                 frames = 0;
             }
         }
